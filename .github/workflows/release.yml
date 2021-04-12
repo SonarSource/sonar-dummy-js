@@ -1,7 +1,4 @@
 on: 
-  push:
-    branches:
-      - 'main'
   release:
     types:
       - published
@@ -9,38 +6,18 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    steps:      
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
+    steps:            
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 10
-      - run: curl --version
+          node-version: 10      
+      - name: Using Variables
+        env:
+          RELEASE_TAG: ${{ github.release.tag_name }}
+      - run: curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/sonar-dummy-js/-/sonar-dummy-js-$RELEASE_TAG.tgz
       - name: Publish npm package            
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
-        run: npm publish
+          RELEASE_TAG: ${{ github.release.tag_name }}
+        run: npm publish sonar-dummy-js-$RELEASE_TAG.tgz
 
