@@ -10,14 +10,10 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 10      
-      - name: Using Variables
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: echo $RELEASE_TAG && curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/sonar-dummy-js/-/sonar-dummy-js-$RELEASE_TAG.tgz
+          node-version: 10            
       - name: Publish npm package            
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: npm publish sonar-dummy-js-$RELEASE_TAG.tgz
+        run: echo $RELEASE_TAG && curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/sonar-dummy-js/-/sonar-dummy-js-$RELEASE_TAG.tgz && npm publish sonar-dummy-js-$RELEASE_TAG.tgz
 
