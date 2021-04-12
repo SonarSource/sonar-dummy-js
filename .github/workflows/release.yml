@@ -15,5 +15,4 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: echo $RELEASE_TAG && curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/sonar-dummy-js/-/sonar-dummy-js-$RELEASE_TAG.tgz && npm publish sonar-dummy-js-$RELEASE_TAG.tgz
-
+        run: echo $RELEASE_TAG && curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/%40sonarsource/sonar-dummy-js/-/%40sonarsource/sonar-dummy-js-$RELEASE_TAG.tgz && npm publish sonar-dummy-js-$RELEASE_TAG.tgz
