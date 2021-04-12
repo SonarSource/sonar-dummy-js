@@ -3,14 +3,14 @@ on:
     types:
       - published
 
-jobs:
-  env:
-    RELEASE_TAG: ${{ github.event.release.tag_name }}
-    REPOX_URL: "https://repox.jfrog.io/artifactory"
-    NPM_REPOSITORY: "sonarsource-npm-public"
-    PACKAGE: "%40sonarsource/sonar-dummy-js"
+jobs:  
   publish:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      REPOX_URL: "https://repox.jfrog.io/artifactory"
+      NPM_REPOSITORY: "sonarsource-npm-public"
+      PACKAGE: "%40sonarsource/sonar-dummy-js"
     steps:            
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
