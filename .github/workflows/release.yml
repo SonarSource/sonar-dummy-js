@@ -14,9 +14,9 @@ jobs:
       - name: Download artifacts
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-          REPOX_URL: https://repox.jfrog.io/artifactory
-          NPM_REPOSITORY: sonarsource-npm-public
-          PACKAGE: %40sonarsource/sonar-dummy-js
+          REPOX_URL: "https://repox.jfrog.io/artifactory"
+          NPM_REPOSITORY: "sonarsource-npm-public"
+          PACKAGE: "@sonarsource/sonar-dummy-js"
         run: curl -o sonar-dummy-js-$RELEASE_TAG.tgz $REPOX_URL/NPM_REPOSITORY/$PACKAGE/-/$PACKAGE-$RELEASE_TAG.tgz
       - name: Publish npm package            
         env:
