@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 10      
       - name: Download artifacts        
-        run: curl -o $PACKAGE-$RELEASE_TAG.tgz $REPOX_URL/$NPM_REPOSITORY/$PACKAGE/-/$SCOPE$PACKAGE-$RELEASE_TAG.tgz
+        run: curl -o $PACKAGE-$RELEASE_TAG.tgz $REPOX_URL/$NPM_REPOSITORY/$SCOPE$PACKAGE/-/$SCOPE$PACKAGE-$RELEASE_TAG.tgz
       - name: Publish npm package            
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
