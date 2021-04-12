@@ -10,9 +10,17 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 10            
+          node-version: 10      
+      - name: Download artifacts
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REPOX_URL: https://repox.jfrog.io/artifactory
+          NPM_REPOSITORY: sonarsource-npm-public
+          PACKAGE: %40sonarsource/sonar-dummy-js
+        run: curl -o sonar-dummy-js-$RELEASE_TAG.tgz $REPOX_URL/NPM_REPOSITORY/$PACKAGE/-/$PACKAGE-$RELEASE_TAG.tgz
       - name: Publish npm package            
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: echo $RELEASE_TAG && curl -o sonar-dummy-js-$RELEASE_TAG.tgz https://repox.jfrog.io/artifactory/sonarsource-npm-public/%40sonarsource/sonar-dummy-js/-/%40sonarsource/sonar-dummy-js-$RELEASE_TAG.tgz && npm publish sonar-dummy-js-$RELEASE_TAG.tgz
+        run: npm publish sonar-dummy-js-$RELEASE_TAG.tgz
+
