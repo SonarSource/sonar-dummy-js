@@ -4,12 +4,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - env:
-        NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 10
-      - run: curl --version
-      - run: npm publish
+      - name: Release npm package      
+        uses: actions/checkout@v1
+        uses: actions/setup-node@v1
+          with:
+            node-version: 10
+        run: curl --version
+        run: npm publish
+        env:
+          NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
+
       
