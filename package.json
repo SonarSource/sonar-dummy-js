@@ -1,5 +1,5 @@
 {
-  "name": "sonar-dummy-js",
+  "name": "@sonarsource/sonar-dummy-js",
   "version": "1.0.6",
   "description": "Dummy project to test release",
   "main": "index.js",
