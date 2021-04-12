@@ -17,9 +17,8 @@ jobs:
         with:
           node-version: 10      
       - name: Download artifacts        
-        run: curl -o sonar-dummy-js-$RELEASE_TAG.tgz $REPOX_URL/$NPM_REPOSITORY/$PACKAGE/-/$PACKAGE-$RELEASE_TAG.tgz
+        run: curl -o $PACKAGE-$RELEASE_TAG.tgz $REPOX_URL/$NPM_REPOSITORY/$PACKAGE/-/$PACKAGE-$RELEASE_TAG.tgz
       - name: Publish npm package            
         env:
           NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: npm publish $PACKAGE-$RELEASE_TAG.tgz
