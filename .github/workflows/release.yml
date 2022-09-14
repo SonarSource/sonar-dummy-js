@@ -12,7 +12,20 @@ jobs:
       NPM_REPOSITORY: "sonarsource-npm-public"
       SCOPE: "%40sonarsource/"
       PACKAGE: "sonar-dummy-js"
-    steps:            
+      VAULT_ADDR: https://vault.sonar.build:8200
+    permissions:
+      id-token: write
+      contents: read
+    steps:       
+      - name: Vault Secrets
+          uses: hashicorp/vault-action@7d98524254c38dc6892804f991526ff30905f643 # tag=v2.4.2
+          with:
+            url: ${{ env.VAULT_ADDR }}
+            method: jwt
+            path: jwt-ghwf
+            role: github-sonarsource-sonar-dummy-js
+            secrets: |
+              development/kv/data/npmjs sonartech_npm_token | SONARTECH_NPM_TOKEN;
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
       - uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # tag=v3.4.1
         with:
@@ -22,5 +35,5 @@ jobs:
       - run: mv .github/workflows/.npmrc ~/.npmrc 
       - name: Publish npm package            
         env:
-          NPM_TOKEN: ${{ secrets.SONARTECH_NPM_TOKEN }}
+          NPM_TOKEN: ${{ env.SONARTECH_NPM_TOKEN }}
         run: npm publish $PACKAGE-$RELEASE_TAG.tgz
