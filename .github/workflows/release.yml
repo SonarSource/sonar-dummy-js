@@ -18,7 +18,7 @@ jobs:
       contents: read
     steps:       
       - name: Vault Secrets
-        uses: hashicorp/vault-action@7d98524254c38dc6892804f991526ff30905f643 # tag=v2.4.2
+        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43 # v2.7.3
         with:
           url: ${{ env.VAULT_ADDR }}
           method: jwt
