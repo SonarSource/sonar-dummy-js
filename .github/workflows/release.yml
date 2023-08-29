@@ -8,24 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name }}
-      REPOX_URL: "https://repox.jfrog.io/artifactory"
       NPM_REPOSITORY: "sonarsource-npm-public"
       SCOPE: "%40sonarsource/"
       PACKAGE: "sonar-dummy-js"
-      VAULT_ADDR: https://vault.sonar.build:8200
     permissions:
       id-token: write
       contents: read
-    steps:       
-      - name: Vault Secrets
-        uses: hashicorp/vault-action@cb841f2c86fb6d07cff94fda240828c1abc5ba43 # v2.7.3
+    steps:
+      - name: get secrets
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@7160b50d75c02fe48eb3c8d354ca4fd7029f546a # tag=2.5.0-4
         with:
-          url: ${{ env.VAULT_ADDR }}
-          method: jwt
-          path: jwt-ghwf
-          role: github-sonarsource-sonar-dummy-js
           secrets: |
-            development/kv/data/npmjs sonartech_npm_token | SONARTECH_NPM_TOKEN;
+            development/kv/data/npmjs sonartech_npm_token | sonartech_npm_token;
+            development/kv/data/repox url | repox_url;
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
       - uses: actions/setup-node@e33196f7422957bea03ed53f6fbb155025ffc7b8 # v3.7.0
         with:
@@ -35,5 +31,6 @@ jobs:
       - run: mv .github/workflows/.npmrc ~/.npmrc 
       - name: Publish npm package            
         env:
-          NPM_TOKEN: ${{ env.SONARTECH_NPM_TOKEN }}
+          REPOX_URL: ${{ fromJSON(steps.secrets.outputs.vault).repox_url }}
+          NPM_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).sonartech_npm_token }}
         run: npm publish $PACKAGE-$RELEASE_TAG.tgz
