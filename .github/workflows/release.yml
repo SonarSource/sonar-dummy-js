@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: get secrets
         id: secrets
-        uses: SonarSource/vault-action-wrapper@7160b50d75c02fe48eb3c8d354ca4fd7029f546a # tag=2.5.0-4
+        uses: SonarSource/vault-action-wrapper@f4794f0a6d33f37c1900a4d8975a65cd53300dba # 2.8.0-4
         with:
           secrets: |
             development/kv/data/npmjs sonartech_npm_token | sonartech_npm_token;
