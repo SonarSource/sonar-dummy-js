@@ -23,7 +23,7 @@ eks_container_definition: &CONTAINER_DEFINITION
   builder_role: cirrus-builder
   builder_image: docker-builder-v*
   builder_instance_type: t2.small
-  dockerfile: Dockerfile
+  dockerfile: .cirrus/Dockerfile
   docker_arguments:
     CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
 
