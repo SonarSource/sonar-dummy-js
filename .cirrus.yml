@@ -33,6 +33,7 @@ build_task:
     <<: *CONTAINER_DEFINITION
     cpu: 2
     memory: 2G
+  install_script:
+    - npm install
   test_script:
-    - node --version
     - npm test
