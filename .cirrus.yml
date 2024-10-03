@@ -1,0 +1,34 @@
+artifactory_build: &artifactory_build
+  ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
+  ARTIFACTORY_DEPLOY_USERNAME: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer username]
+  ARTIFACTORY_DEPLOY_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
+
+artifactory_private: &artifactory_private
+  ARTIFACTORY_PRIVATE_USERNAME: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader username]
+  ARTIFACTORY_PRIVATE_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
+
+env:
+  CIRRUS_CLONE_DEPTH: "20"
+  ARTIFACTORY_URL: VAULT[development/kv/data/repox data.url]
+  # Possible values for ARTIFACTORY_DEPLOY_REPO: sonarsource-private-qa, sonarsource-public-qa
+  ARTIFACTORY_DEPLOY_REPO: sonarsource-private-qa
+  # Use bash (instead of sh on linux or cmd.exe on Windows)
+  CIRRUS_SHELL: bash
+
+eks_container_definition: &CONTAINER_DEFINITION
+  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:j21-latest
+  cluster_name: ${CIRRUS_CLUSTER_NAME}
+  region: eu-central-1
+  namespace: default
+  builder_role: cirrus-builder
+  builder_image: docker-builder-v*
+  builder_instance_type: t2.small
+
+build_task:
+  auto_cancellation: $CIRRUS_BRANCH != 'master' && $CIRRUS_BRANCH != 'stable'
+  eks_container:
+    <<: *CONTAINER_DEFINITION
+
+  test_script:
+    - node --version
+    - npm test
