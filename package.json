@@ -4,6 +4,6 @@
   "description": "Dummy project to test release",
   "main": "index.js",
   "repository": "git@github.com:SonarSource/sonar-dummy-js.git",
-  "author": "Tom <thomas.verin@sonarsource.com>",
+  "author": "DevInfra Squad <platform.devinfra@sonarsource.com>",
   "license": "LGPLv3"
 }
