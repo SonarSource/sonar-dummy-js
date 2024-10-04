@@ -1,15 +1,20 @@
 {
   "name": "@sonarsource/sonar-dummy-js",
-  "version": "1.0.14-SNAPSHOT",
+  "version": "1.0.14",
   "description": "Dummy project making use of SonarSource organization tools for releasing NPM projects",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "babel src --out-dir src"
   },
   "repository": "git@github.com:SonarSource/sonar-dummy-js.git",
   "author": "DevInfra Squad <platform.devinfra@sonarsource.com>",
   "license": "LGPLv3",
   "devDependencies": {
+    "@babel/cli": "^7.25.7",
+    "@babel/core": "^7.25.7",
+    "@babel/preset-env": "^7.25.7",
+    "babel-jest": "^29.7.0",
     "jest": "^29.7.0"
   }
 }

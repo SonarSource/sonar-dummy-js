@@ -1,58 +1,20 @@
 name: Release sonar-dummy-js
 
 on:
-
-  push:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       release_version:
         description: 'Version'
-        required: true
+        required: false
 
 jobs:
-  publish:
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
-    env:
-      RELEASE_TAG: ${{ github.event.inputs.release_version }}
-      NPM_REPOSITORY: "sonarsource-npm-public"
-      SCOPE: ""
-      PACKAGE: "sonar-dummy-js"
-    steps:
-      - name: Vault
-        id: secrets
-        uses: SonarSource/vault-action-wrapper@v3
-        with:
-          secrets:
-            development/kv/data/repox url | repox_url;
-            development/artifactory/token/{REPO_OWNER_NAME_DASH}-qa-deployer access_token  | qa_deployer_access_token;
-            development/artifactory/token/{REPO_OWNER_NAME_DASH}-promoter access_token  | promoter_access_token;
-            development/kv/data/npmjs sonartech_npm_token  | npm_token;
-      - name: Setup JFrog for deploy
-        uses: SonarSource/jfrog-setup-wrapper@907e87c3d2081a98d2ab8cb03284ee6711f1ee83 # tag=3.2.3
-        with:
-          jfrogAccessToken: ${{ fromJSON(steps.secrets.outputs.vault).qa_deployer_access_token }}
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Publish npm package
-        env:
-          NPM_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).npm_token }}
-        run: |
-          jfrog rt npm-config --repo-resolve npm --repo-deploy sonarsource-npm-public-qa
-          jfrog rt npm-ci
-          npm version $RELEASE_TAG
-          npm run build
-          npm publish
-          jfrog rt npm-publish --build-name=sonar-dummy-js --build-number=${{ github.event.inputs.release_version }}
-          jfrog rt build-publish sonar-dummy-js ${{ github.event.inputs.release_version }}
-  release:
+  releaseasing:
     uses: SonarSource/gh-action_release/.github/workflows/main.yaml@feat/smarini/BUILD-6483-addPublishToNpmJsWorkflow
     with:
       publishToNpmJS: true
+      skipJavascriptReleasabilityChecks: false
     permissions:
       id-token: write
       contents: write
