@@ -1,17 +1,7 @@
-artifactory_build: &artifactory_build
-  ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
-  ARTIFACTORY_DEPLOY_USERNAME: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer username]
-  ARTIFACTORY_DEPLOY_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
-
-artifactory_private: &artifactory_private
-  ARTIFACTORY_PRIVATE_USERNAME: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader username]
-  ARTIFACTORY_PRIVATE_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
-
 env:
   CIRRUS_CLONE_DEPTH: "20"
   ARTIFACTORY_URL: VAULT[development/kv/data/repox data.url]
-  # Possible values for ARTIFACTORY_DEPLOY_REPO: sonarsource-private-qa, sonarsource-public-qa
-  ARTIFACTORY_DEPLOY_REPO: sonarsource-private-qa
+  ARTIFACTORY_DEPLOY_REPO: sonarsource-npm-public-qa
   # Use bash (instead of sh on linux or cmd.exe on Windows)
   CIRRUS_SHELL: bash
 
@@ -33,7 +23,35 @@ build_task:
     <<: *CONTAINER_DEFINITION
     cpu: 2
     memory: 2G
-  install_script:
-    - npm install
-  test_script:
-    - npm test
+  env:
+    ARTIFACTORY_DEPLOY_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
+    SONAR_HOST_URL: VAULT[development/kv/data/sonarcloud data.url]
+    SONAR_TOKEN: VAULT[development/kv/data/sonarcloud data.token]
+    DEPLOY_PULL_REQUEST: "true" # Deploy or not PR builds to Repox
+    # (reminder: PRs builds goes to sonarsource-npm-public-dev / long living branches sonarsource-npm-public-builds)
+
+  node_modules_cache:
+    folder: node_modules
+    reupload_on_changes: "false"
+    fingerprint_script:
+      - echo $CIRRUS_OS
+      - node --version
+      - cat package-lock.json
+    populate_script:
+      - npm install
+
+  build_script:
+    - source cirrus-env BUILD
+    - .cirrus/scripts/regular_npm_build_deploy_analyze
+
+promote_task:
+  depends_on:
+    - build
+  eks_container:
+    <<: *CONTAINER_DEFINITION
+    cpu: 2
+    memory: 2G
+  env:
+    ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
+    GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
+  script: .cirrus/scripts/cirrus_promote_npm
