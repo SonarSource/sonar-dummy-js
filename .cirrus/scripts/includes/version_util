@@ -1,0 +1,22 @@
+#!/bin/bash
+# This script is responsible to provide functions to verify that the specified version follows the Sonar way proposed
+# by the RE Team.
+#
+# Usage: source includes/version_util
+
+# Requires the environment variables:
+# none are required yet the functions are able to autofix
+
+
+# Verify that the version declared in pom.xml or in gradle.properties
+# use the following pattern: x.x.x.x (<major>.<minor>.<patch>.<buildNumber>) and warn if not.
+# Args:
+#  $1 The version string to check
+function check_version_format(){
+  local version=$1
+  local extracted_points="${version//[^.]}"
+  local point_count=${#extracted_points}
+  if [[ "$point_count" != 3 ]]; then
+    echo "WARN: This version $version does not match the standardized format used commonly across the organization: '<MAJOR>.<MINOR>.<PATCH>.<BUILD NUMBER>'."
+  fi
+}

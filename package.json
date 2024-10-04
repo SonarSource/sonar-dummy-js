@@ -5,8 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "build": ""
+    "build": "npm --version"
   },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
   "repository": "git@github.com:SonarSource/sonar-dummy-js.git",
   "author": "DevInfra Squad <platform.devinfra@sonarsource.com>",
   "license": "LGPLv3",
