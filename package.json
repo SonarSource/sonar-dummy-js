@@ -4,7 +4,8 @@
   "description": "Dummy project making use of SonarSource organization tools for releasing NPM projects",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": ""
   },
   "repository": "git@github.com:SonarSource/sonar-dummy-js.git",
   "author": "DevInfra Squad <platform.devinfra@sonarsource.com>",
