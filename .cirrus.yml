@@ -6,14 +6,10 @@ env:
   CIRRUS_SHELL: bash
 
 eks_container_definition: &CONTAINER_DEFINITION
-  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:j21-latest
+  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:latest
   cluster_name: ${CIRRUS_CLUSTER_NAME}
   region: eu-central-1
   namespace: default
-  builder_role: cirrus-builder
-  builder_image: docker-builder-v*
-  builder_instance_type: t2.small
-  dockerfile: .cirrus/Dockerfile
   docker_arguments:
     CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
 
@@ -42,7 +38,7 @@ build_task:
 
   build_script:
     - source cirrus-env BUILD
-    - .cirrus/scripts/regular_npm_build_deploy_analyze
+    - regular_npm_build_deploy_analyze
 
 promote_task:
   depends_on:
@@ -54,4 +50,4 @@ promote_task:
   env:
     ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
     GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
-  script: .cirrus/scripts/cirrus_promote_npm
+  script: cirrus_promote_npm
