@@ -34,7 +34,7 @@ build_task:
       - node --version
       - cat package-lock.json
     populate_script:
-      - npm install
+      - npm ci
 
   build_script:
     - source cirrus-env BUILD
