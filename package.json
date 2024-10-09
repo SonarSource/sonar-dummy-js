@@ -1,6 +1,6 @@
 {
   "name": "@sonarsource/sonar-dummy-js",
-  "version": "1.0.14-SNAPSHOT",
+  "version": "1.0.15-SNAPSHOT",
   "description": "Dummy project making use of SonarSource organization tools for releasing NPM projects",
   "main": "src/index.js",
   "scripts": {

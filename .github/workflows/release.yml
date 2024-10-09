@@ -11,10 +11,10 @@ on:
 
 jobs:
   release:
-    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@6172b763888e34a9c21d6ef0eb4a424578d376cb # 5.9.4
+    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@fix/smarini/BUILD-6483-fixNpmJsVersion # TODO: change this to the new released version
     with:
       publishToNpmJS: true
-      skipJavascriptReleasabilityChecks: true
+      skipJavascriptReleasabilityChecks: false
     permissions:
       id-token: write
       contents: write
