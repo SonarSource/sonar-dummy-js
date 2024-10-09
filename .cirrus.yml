@@ -34,11 +34,11 @@ build_task:
       - node --version
       - cat package-lock.json
     populate_script:
-      - npm install
+      - npm ci
 
   build_script:
     - source cirrus-env BUILD
-    - regular_npm_build_deploy_analyze
+    - .cirrus/regular_npm_build_deploy_analyze
 
 promote_task:
   depends_on:
