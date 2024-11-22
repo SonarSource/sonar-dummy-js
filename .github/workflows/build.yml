@@ -1,0 +1,38 @@
+name: Node.js CI
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # for vault
+      contents: write
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Secrets
+      uses: SonarSource/vault-action-wrapper@d6d745ffdbc82b040df839b903bc33b5592cd6b0 # 3.0.2
+      with:
+        secrets: |
+          development/artifactory/token/${{ github.repository_owner }}-${{ github.event.repository.name }}-qa-deployer access_token | ARTIFACTORY_DEPLOY_ACCESS_TOKEN;
+          development/kv/data/sonarcloud url | SONAR_HOST_URL;
+          development/kv/data/sonarcloud token | SONAR_TOKEN;
+  
+    - name: Initialize environment
+      run: ./includes/cirrus-env
+        
+    - name: Execute npm_build_deploy_analyze script
+      run: ./npm_build_deploy_analyze
