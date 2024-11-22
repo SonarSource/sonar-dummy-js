@@ -1,0 +1,106 @@
+#!/bin/bash
+
+set -euo pipefail
+
+source analyze
+source deploy
+
+if [ "${GITHUB_BRANCH}" == "master" ] && [ "$PULL_REQUEST" == "false" ]; then
+  echo '======= Build, deploy and analyze master ======='
+
+  git fetch origin "${GITHUB_BRANCH}" # WHY?
+
+  CURRENT_VERSION=$(jq -r '.version' package.json)
+  . set_npm_build_version "$BUILD_NUMBER"
+  check_version_format "$PROJECT_VERSION"
+
+  npm ci
+  npm test
+  run_sonar_scanner "-Dsonar.projectVersion=""$CURRENT_VERSION"""
+
+  npm run build
+
+  jfrog_npm_publish
+
+elif [[ "${GITHUB_BRANCH}" == "branch-"* ]] && [ "$PULL_REQUEST" == "false" ]; then
+
+  git fetch --unshallow || true # WHY, already on top in prepare?
+  git fetch origin "${GITHUB_BRANCH}"
+
+  CURRENT_VERSION=$(jq -r .version "$PACKAGE_JSON")
+
+  if [[ $CURRENT_VERSION =~ "-SNAPSHOT" ]]; then
+    echo "======= Found SNAPSHOT version ======="
+    # Do not deploy a SNAPSHOT version but the release version related to this build
+    . set_npm_build_version "$BUILD_NUMBER"
+    check_version_format "$(jq -r .version "$PACKAGE_JSON")"
+  else
+    echo "======= Found RELEASE version ======="
+    echo "======= Deploy $CURRENT_VERSION ======="
+    check_version_format "$CURRENT_VERSION"
+  fi
+
+  npm ci
+  npm test
+  run_sonar_scanner "-Dsonar.branch.name=""$GITHUB_BRANCH"""
+
+  npm run build
+  jfrog_npm_publish
+
+elif [ "$PULL_REQUEST" != "false" ]; then
+  echo '======= Build and analyze pull request'
+
+  # Do not deploy a SNAPSHOT version but the release version related to this build and PR
+  . set_npm_build_version "$BUILD_NUMBER"
+
+
+  if [ "${DEPLOY_PULL_REQUEST:-}" == "true" ]; then
+    echo '======= with deploy ======='
+
+    check_version_format "$PROJECT_VERSION"
+
+    npm ci
+    npm test
+    run_sonar_scanner "-Dsonar.analysis.prNumber=""$PULL_REQUEST"""
+    
+    npm run build
+    jfrog_npm_publish
+
+  else
+    echo '======= no deploy ======='
+
+    npm ci
+    npm test
+    run_sonar_scanner "-Dsonar.analysis.prNumber=""$PULL_REQUEST"""
+
+    npm run build
+  fi
+
+elif [[ "$GITHUB_BRANCH" == "dogfood-on-"* ]] && [ "$PULL_REQUEST" == "false" ]; then
+  echo '======= Build dogfood branch ======='
+
+  CURRENT_VERSION=$(jq -r .version "$PACKAGE_JSON")
+
+  . set_npm_build_version "$BUILD_NUMBER"
+  check_version_format "$PROJECT_VERSION"
+
+  npm ci
+  npm run build
+  jfrog_npm_publish
+
+elif [[ "$GITHUB_BRANCH" == "feature/long/"* ]] && [ "$PULL_REQUEST" == "false" ]; then
+  echo '======= Build and analyze long lived feature branch ======='
+
+  npm ci
+  npm test
+  run_sonar_scanner "-Dsonar.branch.name=""$GITHUB_BRANCH"""
+
+  npm run build
+
+else
+  echo '======= Build, no analysis, no deploy ======='
+
+  npm ci
+  npm test
+  npm run build
+fi

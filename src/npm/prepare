@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -euo pipefail
+
+source "$(dirname "$0")"/../includes/version_util
+source env_setup_temp.sh
+
+# : "${ARTIFACTORY_URL?}"
+# : "${ARTIFACTORY_DEPLOY_ACCESS_TOKEN?}"
+# : "${SONAR_HOST_URL?}"
+# : "${SONAR_TOKEN?}"
+
+# PIPELINE_ID comes from source cirrus-env in the pipeline where the scripts are used
+# BUILD_NUMBER comes from source cirrus-env in the pipeline where the scripts are used
+if [ -z "$PIPELINE_ID" ]; then
+  PIPELINE_ID=$BUILD_NUMBER
+fi
+
+git fetch --unshallow || true
+
+# GIT_SHA1 comes from source cirrus-env in the pipeline where the scripts are used
+# GITHUB_BASE_BRANCH comes from source cirrus-env in the pipeline where the scripts are used
+if [ -n "${GITHUB_BASE_BRANCH}" ]; then
+	git fetch origin "${GITHUB_BASE_BRANCH}"
+fi

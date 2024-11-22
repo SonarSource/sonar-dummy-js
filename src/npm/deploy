@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -euo pipefail
+
+source prepare
+
+function jfrog_npm_publish() {
+  jfrog config remove repox > /dev/null 2>&1 # Do not log if the repox config were not present
+  jfrog config add repox --artifactory-url "$ARTIFACTORY_URL" --access-token "$ARTIFACTORY_DEPLOY_ACCESS_TOKEN"
+  jfrog npm-config --repo-resolve npm --repo-deploy sonarsource-npm-public-qa
+
+  jfrog npm publish --build-name="$CIRRUS_REPO_NAME" --build-number="$BUILD_NUMBER"
+  jfrog rt build-publish "$CIRRUS_REPO_NAME" "$BUILD_NUMBER"
+}

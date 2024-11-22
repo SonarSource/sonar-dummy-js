@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -euo pipefail
+
+./env_setup_temp.sh
+echo "Getting version"
+./get_version.sh
+echo "Building npm"
+./build_npm.sh
+echo "Building yarn"
+./build_yarn.sh
+echo "Analyzing sonar"
+source analyze
+run_sonar_scanner "-Dsonar.branch.name=main" "-Dsonar.projectVersion=1.0.0"
+source deploy
+jfrog_npm_publish

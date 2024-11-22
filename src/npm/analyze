@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+
+source prepare
+
+default_sonar_scanner_params=(
+  -Dsonar.host.url="${SONAR_HOST_URL}"
+  -Dsonar.token="${SONAR_TOKEN}" 
+  -Dsonar.analysis.buildNumber="${BUILD_NUMBER}"
+  -Dsonar.analysis.pipeline="${PIPELINE_ID}"
+  -Dsonar.analysis.sha1="${GIT_SHA1}"
+  -Dsonar.analysis.repository="${GITHUB_REPO}"
+)
+
+default_sonar_scanner_params+=("$@")
+
+./sonar-scanner-fake "${default_sonar_scanner_params[@]}"
+
+export -f run_sonar_scanner

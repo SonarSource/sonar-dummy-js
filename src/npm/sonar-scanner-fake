@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo "sonar-scanner called with the following parameters:"
+for param in "$@"; do
+  echo "$param"
+done
