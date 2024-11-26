@@ -1,16 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Starting script..."
-
-# SonarQube-related utility functions
-
-: "${SONAR_HOST_URL?Environment variable missing}"
-: "${SONAR_TOKEN?Environment variable missing}"
-
-echo "SONAR_HOST_URL: $SONAR_HOST_URL"
-echo "SONAR_TOKEN: $SONAR_TOKEN"
-
 git fetch --unshallow || true
 
 if [ -n "${GITHUB_BASE_BRANCH:-}" ]; then
@@ -18,11 +8,8 @@ if [ -n "${GITHUB_BASE_BRANCH:-}" ]; then
     git fetch origin "${GITHUB_BASE_BRANCH}"
 fi
 
-if [ -z "$PIPELINE_ID" ]; then
+if [ -z "${PIPELINE_ID:-}" ]; then
   PIPELINE_ID=$BUILD_NUMBER
-  echo "PIPELINE_ID not set, using BUILD_NUMBER: $BUILD_NUMBER"
-else
-  echo "PIPELINE_ID: $PIPELINE_ID"
 fi
 
 # Runs the SonarQube scanner with default and additional parameters.
@@ -31,9 +18,18 @@ run_sonar_scanner() {
 
     local additional_params=("$@")
 
-    echo "Running sonar-scanner with parameters: ${additional_params[*]}"
+    # echo "Running SonarQube scanner..."
+    if [ -z "${SONAR_HOST_URL:-}" ]; then
+      echo "SONAR_HOST_URL is required for SonarQube scanner"
+      exit 1
+    fi
 
-    sonar-scanner -X \
+    if [ -z "${SONAR_TOKEN:-}" ]; then
+      echo "SONAR_TOKEN is required for SonarQube scanner"
+      exit 1
+    fi
+
+    npx sonarqube-scanner -X \
         -Dsonar.host.url="$SONAR_HOST_URL" \
         -Dsonar.token="$SONAR_TOKEN" \
         -Dsonar.analysis.buildNumber="$BUILD_NUMBER" \
@@ -41,6 +37,5 @@ run_sonar_scanner() {
         -Dsonar.analysis.sha1="$GIT_SHA1" \
         -Dsonar.analysis.repository="$GITHUB_REPO" \
         "${additional_params[@]}"
+    echo "SonarQube scanner finished"
 }
-
-echo "Script finished."

@@ -1,13 +1,14 @@
 #!/bin/bash
+# shellcheck source=/dev/null
 
 set -euo pipefail
 
 source "$(dirname "$0")"/includes/git_utils
 source "$(dirname "$0")"/includes/version_util
-source analyze
+source "$(dirname "$0")"/analyze
+source "$(dirname "$0")"/npm_deploy
 
-# source npm_deploy
-source npm_version_utils
+source "$(dirname "$0")"/npm_version_utils
 
 
 if is_master_branch && ! is_pull_request; then
@@ -19,27 +20,27 @@ if is_master_branch && ! is_pull_request; then
   CURRENT_VERSION=$(get_current_version)
   echo "Current version: $CURRENT_VERSION"
 
-  # set_npm_version_with_build_id "$BUILD_NUMBER"
+  set_npm_version_with_build_id "$BUILD_NUMBER"
   echo "Set npm version with build ID: $BUILD_NUMBER."
 
   check_version_format "$PROJECT_VERSION"
   echo "Checked version format: $PROJECT_VERSION."
 
   echo "Installing npm dependencies..."
-  npm ci
+  yarn install --immutable
 
   echo "Running tests..."
-  npm test
+  yarn test
 
   echo "Running Sonar Scanner..."
   run_sonar_scanner \
       -Dsonar.projectVersion="$CURRENT_VERSION"
 
   echo "Building project..."
-  npm run build
+  yarn build
 
   echo "Publishing to JFrog..."
-  jfrog_npm_publish
+  jfrog_npm_publish "$@"
 
 elif is_maintenance_branch && not_pull_request; then
   git fetch origin "${GITHUB_BRANCH}"
@@ -57,13 +58,13 @@ elif is_maintenance_branch && not_pull_request; then
     check_version_format "$CURRENT_VERSION"
   fi
 
-  npm ci
-  npm test
+  yarn install --immutable
+  yarn test
   run_sonar_scanner \
       -Dsonar.branch.name="$GITHUB_BRANCH"
 
-  npm run build
-  jfrog_npm_publish
+  yarn build
+  jfrog_npm_publish "$@"
 
 elif is_pull_request; then
   # Do not deploy a SNAPSHOT version but the release version related to this build and PR
@@ -74,24 +75,24 @@ elif is_pull_request; then
 
     check_version_format "$PROJECT_VERSION"
 
-    npm ci
+    yarn install --immutable
 
-    npm test
+    yarn test
     run_sonar_scanner \
       -Dsonar.analysis.prNumber="$PULL_REQUEST"
 
-    npm run build
-    jfrog_npm_publish
+    yarn build
+    jfrog_npm_publish "$@"
 
   else
     echo '======= no deploy ======='
 
-    npm ci
+    yarn install --immutable
 
     run_sonar_scanner \
       -Dsonar.analysis.prNumber="$PULL_REQUEST"
 
-    npm run build
+    yarn build
   fi
 
 elif is_dogfood_branch && not_pull_request; then
@@ -102,21 +103,21 @@ elif is_dogfood_branch && not_pull_request; then
   set_npm_version_with_build_id "$BUILD_NUMBER"
   check_version_format "$PROJECT_VERSION"
 
-  npm ci
-  npm run build
-  jfrog_npm_publish
+  yarn install --immutable
+  yarn build
+  jfrog_npm_publish "$@"
 
 elif is_long_lived_feature_branch && not_pull_request; then
-  npm ci
+  yarn install --immutable
 
-  npm test
+  yarn test
   run_sonar_scanner \
       -Dsonar.branch.name="$GITHUB_BRANCH"
 
-  npm run build
+  yarn build
 
 else
-  npm ci
-  npm test
-  npm run build
+  yarn install --immutable
+  yarn test
+  yarn build
 fi

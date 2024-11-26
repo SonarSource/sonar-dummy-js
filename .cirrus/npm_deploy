@@ -16,6 +16,7 @@ jfrog_npm_publish() {
   local build_name=${3:-$CIRRUS_REPO_NAME}
   local build_number=${4:-$BUILD_NUMBER}
 
+
   jfrog npm-config --repo-resolve "$repo_resolve" --repo-deploy "$repo_deploy"
   jfrog npm publish --build-name="$build_name" --build-number="$build_number"
   jfrog rt build-publish "$build_name" "$build_number"
