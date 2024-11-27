@@ -6,7 +6,8 @@ env:
   CIRRUS_SHELL: bash
 
 eks_container_definition: &CONTAINER_DEFINITION
-  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:latest
+  #image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:latest
+  image: 460386131003.dkr.ecr.eu-central-1.amazonaws.com_base-pr-118_node22-yarn2.4.3
   cluster_name: ${CIRRUS_CLUSTER_NAME}
   region: eu-central-1
   namespace: default
