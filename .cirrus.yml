@@ -6,19 +6,21 @@ env:
   CIRRUS_SHELL: bash
 
 eks_container_definition: &CONTAINER_DEFINITION
-  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:latest
+  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:node20-yarn2.4.3
   cluster_name: ${CIRRUS_CLUSTER_NAME}
   region: eu-central-1
   namespace: default
-  docker_arguments:
-    CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
 
 build_task:
   auto_cancellation: $CIRRUS_BRANCH != 'master' && $CIRRUS_BRANCH != 'stable'
   eks_container:
     <<: *CONTAINER_DEFINITION
-    cpu: 2
-    memory: 2G
+    builder_role: cirrus-builder
+    builder_image: docker-builder-v*
+    builder_instance_type: t2.small
+    dockerfile: .cirrus/Dockerfile
+    docker_arguments:
+      CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
   env:
     ARTIFACTORY_DEPLOY_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
     SONAR_HOST_URL: VAULT[development/kv/data/sonarcloud data.url]
@@ -38,7 +40,7 @@ build_task:
 
   build_script:
     - source cirrus-env BUILD
-    - regular_npm_build_deploy_analyze
+    - ./.cirrus/npm_build_deploy_analyze
 
 promote_task:
   depends_on:

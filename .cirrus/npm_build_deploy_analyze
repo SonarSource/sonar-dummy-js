@@ -1,0 +1,123 @@
+#!/bin/bash
+# shellcheck source=/dev/null
+
+set -euo pipefail
+
+source "$(dirname "$0")"/includes/git_utils
+source "$(dirname "$0")"/includes/version_util
+source "$(dirname "$0")"/analyze
+source "$(dirname "$0")"/npm_deploy
+
+source "$(dirname "$0")"/npm_version_utils
+
+
+if is_master_branch && ! is_pull_request; then
+  echo "On master branch and not a pull request."
+
+  git fetch origin "${GITHUB_BRANCH}"
+  echo "Fetched origin ${GITHUB_BRANCH}."
+
+  CURRENT_VERSION=$(get_current_version)
+  echo "Current version: $CURRENT_VERSION"
+
+  set_npm_version_with_build_id "$BUILD_NUMBER"
+  echo "Set npm version with build ID: $BUILD_NUMBER."
+
+  check_version_format "$PROJECT_VERSION"
+  echo "Checked version format: $PROJECT_VERSION."
+
+  echo "Installing npm dependencies..."
+  yarn install --immutable
+
+  echo "Running tests..."
+  yarn test
+
+  echo "Running Sonar Scanner..."
+  run_sonar_scanner \
+      -Dsonar.projectVersion="$CURRENT_VERSION"
+
+  echo "Building project..."
+  yarn build
+
+  echo "Publishing to JFrog..."
+  jfrog_npm_publish "$@"
+
+elif is_maintenance_branch && not_pull_request; then
+  git fetch origin "${GITHUB_BRANCH}"
+
+  CURRENT_VERSION=$(get_current_version)
+
+  if [[ $CURRENT_VERSION =~ "-SNAPSHOT" ]]; then
+    echo "======= Found SNAPSHOT version ======="
+    # Do not deploy a SNAPSHOT version but the release version related to this build
+    set_npm_version_with_build_id "$BUILD_NUMBER"
+    check_version_format "$CURRENT_VERSION"
+  else
+    echo "======= Found RELEASE version ======="
+    echo "======= Deploy $CURRENT_VERSION ======="
+    check_version_format "$CURRENT_VERSION"
+  fi
+
+  yarn install --immutable
+  yarn test
+  run_sonar_scanner \
+      -Dsonar.branch.name="$GITHUB_BRANCH"
+
+  yarn build
+  jfrog_npm_publish "$@"
+
+elif is_pull_request; then
+  # Do not deploy a SNAPSHOT version but the release version related to this build and PR
+  set_npm_version_with_build_id "$BUILD_NUMBER"
+
+  if [ "${DEPLOY_PULL_REQUEST:-}" == "true" ]; then
+    echo '======= with deploy ======='
+
+    check_version_format "$PROJECT_VERSION"
+
+    yarn install --immutable
+
+    yarn test
+    run_sonar_scanner \
+      -Dsonar.analysis.prNumber="$PULL_REQUEST"
+
+    yarn build
+    jfrog_npm_publish "$@"
+
+  else
+    echo '======= no deploy ======='
+
+    yarn install --immutable
+
+    run_sonar_scanner \
+      -Dsonar.analysis.prNumber="$PULL_REQUEST"
+
+    yarn build
+  fi
+
+elif is_dogfood_branch && not_pull_request; then
+  echo '======= Build dogfood branch ======='
+
+  CURRENT_VERSION=$(get_current_version)
+
+  set_npm_version_with_build_id "$BUILD_NUMBER"
+  check_version_format "$PROJECT_VERSION"
+
+  yarn install --immutable
+  yarn build
+  jfrog_npm_publish "$@"
+
+elif is_long_lived_feature_branch && not_pull_request; then
+  yarn install --immutable
+
+  yarn test
+  run_sonar_scanner \
+      -Dsonar.branch.name="$GITHUB_BRANCH"
+
+  yarn build
+
+else
+  yarn install --immutable
+  yarn test
+  yarn build
+fi
