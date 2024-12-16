@@ -1,0 +1,34 @@
+#!/bin/bash
+# Git-related utility functions
+
+set -euo pipefail
+
+fetch_git_history() {
+    git fetch --unshallow || true
+}
+
+fetch_pr_references() {
+    if [ -n "${GITHUB_BASE_BRANCH:-}" ]; then
+        git fetch origin "${GITHUB_BASE_BRANCH}"
+    fi
+}
+
+is_master_branch() {
+    [[ "${GITHUB_BRANCH}" == "master" ]]
+}
+
+is_maintenance_branch() {
+    [[ "${GITHUB_BRANCH}" == "branch-"* ]]
+}
+
+is_pull_request() {
+    [[ "${PULL_REQUEST:-}" != "false" ]]
+}
+
+is_dogfood_branch() {
+    [[ "${GITHUB_BRANCH}" == "dogfood-on-"* ]]
+}
+
+is_long_lived_feature_branch() {
+    [[ "${GITHUB_BRANCH}" == "feature/long/"* ]]
+}

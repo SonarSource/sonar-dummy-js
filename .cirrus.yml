@@ -37,8 +37,8 @@ build_task:
       - npm ci
 
   build_script:
-    - source cirrus-env BUILD
-    - npm_build_deploy_analyze
+    - source .cirrus/cirrus-env BUILD
+    - .cirrus/yarn_build_deploy_analyze
 
 promote_task:
   depends_on:
