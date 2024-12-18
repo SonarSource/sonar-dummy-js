@@ -6,10 +6,16 @@ env:
   CIRRUS_SHELL: bash
 
 eks_container_definition: &CONTAINER_DEFINITION
-  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:node20-yarn2.4.3
+  image: ${CIRRUS_AWS_ACCOUNT}.dkr.ecr.eu-central-1.amazonaws.com/base:nodejs-j21-0.1
   cluster_name: ${CIRRUS_CLUSTER_NAME}
   region: eu-central-1
   namespace: default
+  nodeSelectorTerms:
+    - matchExpressions:
+        - key: kubernetes.io/arch
+          operator: In
+          values:
+            - arm64
   docker_arguments:
     CIRRUS_AWS_ACCOUNT: ${CIRRUS_AWS_ACCOUNT}
 
