@@ -8,6 +8,6 @@ jobs:
  slack-notifications:
   permissions:
    id-token: write  # to authenticate via OIDC
-  uses: SonarSource/gh-action_build-notify/.github/workflows/main.yaml@a7c8bbe47234f120817f1a0c80a15d1fc429fcf3 # 2.0.0
+  uses: SonarSource/gh-action_build-notify/.github/workflows/main.yaml@4e96c8adc61581df626865d0be22396c7014c7c3 # 2.1.0
   with:
    slackChannel: squad-dev-infra-github
