@@ -19,6 +19,7 @@ jobs:
         id: secrets
         uses: SonarSource/vault-action-wrapper@d0877ce7085bc313bd7a7b99c4e4489d42fb40e1 # 3.0.0
         with:
+          url: https://vault-internal.sonar.build
           secrets: |
             development/kv/data/npmjs sonartech_npm_token | sonartech_npm_token;
             development/kv/data/repox url | repox_url;
