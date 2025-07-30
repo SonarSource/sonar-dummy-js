@@ -31,7 +31,7 @@ jobs:
         with:
           artifactory-deploy-repo: "sonarsource-npm-public-qa"
           deploy-pull-request: true
-          public: false # TODO: BUILD-8639 Change to true once Repox permissions for Repox are updated
+          public: false # TODO: BUILD-8639 Change to true once Repox permissions for Repox are modified
 
   promote:
     needs:
