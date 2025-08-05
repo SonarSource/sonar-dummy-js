@@ -1,4 +1,6 @@
+---
 name: Build
+
 on:
   push:
     branches:
@@ -23,10 +25,7 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.7.12
-      - id: get-build-number
-        uses: SonarSource/ci-github-actions/get-build-number@master # dogfood
       - name: Build, Test, Analyze and deploy
-        id: build
         uses: SonarSource/ci-github-actions/build-npm@master # dogfood
         with:
           artifactory-deploy-repo: "sonarsource-npm-public-qa"
@@ -45,5 +44,4 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: SonarSource/ci-github-actions/get-build-number@master # dogfood
       - uses: SonarSource/ci-github-actions/promote@master # dogfood
