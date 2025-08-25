@@ -44,4 +44,4 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: SonarSource/ci-github-actions/promote@feat/mmatuszny/BUILD-8855-promote-improvement # dogfood
+      - uses: SonarSource/ci-github-actions/promote@master # dogfood
