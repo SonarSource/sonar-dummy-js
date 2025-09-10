@@ -1,5 +1,6 @@
+---
 name: Releasability Status
-on:
+"on":
   workflow_run:
     workflows: ["Build"]
     types:
@@ -8,6 +9,9 @@ on:
       - master
       - dogfood-*
       - branch-*
+  push:
+    branches:
+      - feat/mmatuszny/*
 
 jobs:
   releasability-status:
@@ -19,6 +23,89 @@ jobs:
       contents: read
     if: github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: SonarSource/gh-action_releasability/releasability-status@master # dogfood
+      - uses: SonarSource/gh-action_releasability/releasability-status@master  # dogfood
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+  slack-notifications:
+    if: always()
+    runs-on: github-ubuntu-latest-s
+    permissions:
+      id-token: write
+    steps:
+      - name: Vault Secrets
+        id: secrets
+        uses: SonarSource/vault-action-wrapper@320bd31b03e5dacaac6be51bbbb15adf7caccc32  # v3.1.0
+        with:
+          secrets: |
+            development/kv/data/slack token | SLACK_BOT_TOKEN;
+      - uses: actions/checkout@v4
+      - name: Slack Notification rtCamp
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_TOKEN: >-
+            ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: test-notif-open
+          SLACK_TITLE: Details
+          SLACK_MESSAGE: |
+            Workflow failed makarena :shark:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            :rocket:
+
+          SLACK_USERNAME: MikolajBot
+
+      - name: Slack Notification slackapi
+        uses: slackapi/slack-github-action@v2.1.1
+
+        with:
+          errors: true
+          method: chat.postMessage
+          token: ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "test-notif-open",
+              "text": "${{ github.repository }} workflow completed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* ${{ job.status }} | *Branch:* ${{ github.ref_name }} | *Workflow:* ${{ github.workflow }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Repository:* <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Commit:* <https://github.com/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Message:*"
+                    },
+                    {
+                      "type": "mrkdwn", 
+                      "text": ${{ toJSON(github.event.head_commit.message) }}
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
+                  }
+                }
+              ]
+            }
