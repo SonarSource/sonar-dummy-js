@@ -29,7 +29,7 @@ jobs:
 
   slack-notifications:
     if: always()
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-xs
     permissions:
       id-token: write
     steps:
