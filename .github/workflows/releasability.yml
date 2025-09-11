@@ -39,73 +39,18 @@ jobs:
         with:
           secrets: |
             development/kv/data/slack token | SLACK_BOT_TOKEN;
-      - uses: actions/checkout@v4
+            
       - name: Slack Notification rtCamp
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_TOKEN: >-
             ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: test-notif-open
-          SLACK_TITLE: Details
+          SLACK_CHANNEL: your-channel-name
+          SLACK_TITLE: Build Failed
           SLACK_MESSAGE: |
-            Workflow failed makarena :shark:
+            Workflow failed in ${{ github.repository }} 🚨
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            :rocket:
-
-          SLACK_USERNAME: MikolajBot
-
-      - name: Slack Notification slackapi
-        uses: slackapi/slack-github-action@v2.1.1
-
-        with:
-          errors: true
-          method: chat.postMessage
-          token: ${{ fromJSON(steps.secrets.outputs.vault).SLACK_BOT_TOKEN }}
-          payload: |
-            {
-              "channel": "test-notif-open",
-              "text": "${{ github.repository }} workflow completed",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Status:* ${{ job.status }} | *Branch:* ${{ github.ref_name }} | *Workflow:* ${{ github.workflow }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Repository:* <https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Commit:* <https://github.com/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Message:*"
-                    },
-                    {
-                      "type": "mrkdwn", 
-                      "text": ${{ toJSON(github.event.head_commit.message) }}
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>"
-                  }
-                }
-              ]
-            }
+            Branch: ${{ github.event.workflow_run.head_branch }}
+            
+          SLACK_USERNAME: BuildBot
+          SLACK_COLOR: danger
