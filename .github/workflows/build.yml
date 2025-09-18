@@ -26,11 +26,12 @@ jobs:
         with:
           version: 2025.7.12
       - name: Build, Test, Analyze and deploy
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        uses: SonarSource/ci-github-actions/build-npm@feat/mmatuszny/BUILD-8830-disable-sonar-npm # dogfood
         with:
           artifactory-deploy-repo: "sonarsource-npm-public-qa"
           deploy-pull-request: true
           public: false # TODO: BUILD-8639 Change to true once Repox permissions for Repox are updated
+          sonar-platform: none
 
   promote:
     needs:
