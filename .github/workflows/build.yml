@@ -31,6 +31,8 @@ jobs:
       - name: Build, Test, Analyze and deploy
         id: build
         uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        env:
+          SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
         with:
           artifactory-deploy-repo: "sonarsource-npm-public-qa"
           deploy-pull-request: true
