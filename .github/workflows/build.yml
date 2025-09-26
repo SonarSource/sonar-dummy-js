@@ -34,7 +34,6 @@ jobs:
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
         with:
-          artifactory-deploy-repo: "sonarsource-npm-public-qa"
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
