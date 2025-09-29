@@ -30,7 +30,7 @@ jobs:
           version: 2025.7.12
       - name: Build, Test, Analyze and deploy
         id: build
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        uses: SonarSource/ci-github-actions/build-npm@fix/jcarsique/BUILD-9169-ifCondition # TEST
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
         with:
@@ -49,7 +49,7 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
         with:
           version: 2025.7.12
-      - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
+      - uses: SonarSource/ci-github-actions/config-npm@fix/jcarsique/BUILD-9169-ifCondition # TEST
         id: config
         with:
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
@@ -73,4 +73,4 @@ jobs:
     env:
       BUILD_NUMBER: ${{ needs.build.outputs.BUILD_NUMBER }} # reuse BUILD_NUMBER from build job
     steps:
-      - uses: SonarSource/ci-github-actions/promote@master # dogfood
+      - uses: SonarSource/ci-github-actions/promote@fix/jcarsique/BUILD-9169-ifCondition # TEST
