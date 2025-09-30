@@ -32,7 +32,7 @@ jobs:
         id: build
         uses: SonarSource/ci-github-actions/build-npm@master # dogfood
         env:
-          SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
+          SQ_SCANNER_VERSION: 4.3.2
         with:
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
