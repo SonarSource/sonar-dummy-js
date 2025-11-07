@@ -7,3 +7,13 @@
 A sample project used for testing purposes
 
 This project uses NPM and is published to Repox and npmjs.com
+
+## Artifact Verification
+
+Provenance attestations are available at: <https://github.com/SonarSource/sonar-dummy-js/attestations>
+
+To verify an artifact:
+
+```bash
+gh attestation verify <artifact-file> --repo SonarSource/sonar-dummy-js
+```
