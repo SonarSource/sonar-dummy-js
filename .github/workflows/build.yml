@@ -21,6 +21,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
+      attestations: write
     outputs:
       BUILD_NUMBER: ${{ steps.build.outputs.BUILD_NUMBER }}
     steps:
@@ -37,6 +38,7 @@ jobs:
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
+          provenance: 'true'
 
   custom-command:
     runs-on: github-ubuntu-latest-s
