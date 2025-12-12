@@ -41,6 +41,8 @@ jobs:
           provenance: 'true'
 
   custom-command:
+    needs:
+      - build
     runs-on: github-ubuntu-latest-s
     name: Custom NPM command
     permissions:
