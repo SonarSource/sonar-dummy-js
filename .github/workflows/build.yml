@@ -78,3 +78,5 @@ jobs:
       BUILD_NUMBER: ${{ needs.build.outputs.BUILD_NUMBER }} # reuse BUILD_NUMBER from build job
     steps:
       - uses: SonarSource/ci-github-actions/promote@master # dogfood
+        with:
+          promote-pull-request: true
