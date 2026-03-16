@@ -1,0 +1,116 @@
+---
+name: "[TEST] Cache migration fallback (GitHub → S3)"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: Cache backend to force
+        required: false
+        default: s3
+        type: choice
+        options:
+          - s3
+          - github
+      import-github-cache:
+        description: Enable GitHub import fallback (default true)
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  # Prerequisite: provision a GitHub cache entry to be imported by scenario 1
+  provision-github-cache:
+    runs-on: github-ubuntu-latest-s
+    name: "Provision GitHub cache entry"
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Create dummy cache content
+        run: mkdir -p ~/.npm && echo "migration-test-${{ github.run_id }}" > ~/.npm/test-file.txt
+      - name: Save to GitHub cache
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.npm
+          key: test-migration-${{ runner.os }}-${{ github.run_id }}
+
+  # Scenario 1: S3 backend with import mode active (default behavior after migration begins)
+  test-s3-import-enabled:
+    needs: provision-github-cache
+    runs-on: github-ubuntu-latest-s
+    name: "S3 + import enabled (migration fallback)"
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Cache with migration fallback
+        id: cache
+        uses: SonarSource/gh-action_cache@master # dogfood
+        with:
+          path: ~/.npm
+          key: test-migration-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: test-migration-${{ runner.os }}-
+          backend: s3
+          # import-github-cache defaults to true — no need to set it explicitly
+      - name: Verify import succeeded
+        run: |
+          [[ "${{ steps.cache.outputs.cache-hit }}" == "true" ]] || { echo "ERROR: cache-hit is not true"; exit 1; }
+          test -f ~/.npm/test-file.txt || { echo "ERROR: cache content not restored from GitHub"; exit 1; }
+          rm -rf ~/.npm  # prevent saving to S3 so other scenarios don't find it
+
+  # Scenario 2: S3 backend with import mode explicitly disabled
+  test-s3-import-disabled:
+    needs: provision-github-cache
+    runs-on: github-ubuntu-latest-s
+    name: "S3 + import disabled (migration complete)"
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Cache without migration fallback
+        id: cache
+        uses: SonarSource/gh-action_cache@master # dogfood
+        with:
+          path: ~/.npm
+          key: test-migration-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: test-migration-${{ runner.os }}-
+          backend: s3
+          import-github-cache: 'false'
+      - name: Verify no import from GitHub
+        run: |
+          [[ "${{ steps.cache.outputs.cache-hit }}" != "true" ]] || { echo "ERROR: cache-hit is true but import should be disabled"; exit 1; }
+          test ! -f ~/.npm/test-file.txt || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
+
+  # Scenario 3: S3 backend with import disabled via env var (repo variable pattern)
+  test-s3-import-disabled-via-env:
+    needs: provision-github-cache
+    runs-on: github-ubuntu-latest-s
+    name: "S3 + import disabled via env var"
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      CACHE_IMPORT_GITHUB: 'false'
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Cache without migration fallback (via env)
+        id: cache
+        uses: SonarSource/gh-action_cache@master # dogfood
+        with:
+          path: ~/.npm
+          key: test-migration-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: test-migration-${{ runner.os }}-
+          backend: s3
+      - name: Verify no import from GitHub
+        run: |
+          [[ "${{ steps.cache.outputs.cache-hit }}" != "true" ]] || { echo "ERROR: cache-hit is true but import should be disabled"; exit 1; }
+          test ! -f ~/.npm/test-file.txt || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
