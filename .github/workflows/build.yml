@@ -14,6 +14,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
 
+env:
+  CACHE_BACKEND: s3   # forces S3 for all cache steps, including those in reusable actions
+
 jobs:
   build:
     runs-on: github-ubuntu-latest-s
