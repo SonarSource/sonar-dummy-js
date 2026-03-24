@@ -6,23 +6,9 @@ on:
     branches: [ master ]
   pull_request:
   workflow_dispatch:
-    inputs:
-      backend:
-        description: Cache backend to force
-        required: false
-        default: s3
-        type: choice
-        options:
-          - s3
-          - github
-      import-github-cache:
-        description: Enable GitHub import fallback (default true)
-        required: false
-        default: 'true'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+
+env:
+  CACHE_BACKEND: s3   # forces S3 for all cache steps, including those in reusable actions
 
 jobs:
   # Prerequisite: provision a GitHub cache entry to be imported by scenario 1
@@ -57,7 +43,6 @@ jobs:
         with:
           path: ~/.npm
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: test-migration-${{ runner.os }}-
           backend: s3
           # import-github-cache defaults to true — no need to set it explicitly
       - name: Verify import succeeded
@@ -82,7 +67,6 @@ jobs:
         with:
           path: ~/.npm
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: test-migration-${{ runner.os }}-
           backend: s3
           import-github-cache: 'false'
       - name: Verify no import from GitHub
@@ -108,7 +92,6 @@ jobs:
         with:
           path: ~/.npm
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: test-migration-${{ runner.os }}-
           backend: s3
       - name: Verify no import from GitHub
         run: |
