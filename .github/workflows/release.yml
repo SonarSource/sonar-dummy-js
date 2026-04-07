@@ -11,10 +11,11 @@ on:
 
 jobs:
   release:
-    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@7b055eca5ce771ff254fbec2697c0fc1c7207e1e # 6.4.0
+    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@feature/BUILD-10930-npm-trusted-publisher
     with:
       publishToNpmJS: true
       skipJavascriptReleasabilityChecks: true
+      useNpmTrustedPublisher: true
     permissions:
       id-token: write
       contents: write
