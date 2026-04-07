@@ -18,11 +18,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Create dummy cache content
         run: mkdir -p ~/.npm && echo "migration-test-${{ github.run_id }}" > ~/.npm/test-file.txt
       - name: Save to GitHub cache
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ~/.npm
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
@@ -36,7 +36,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Cache with migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -60,7 +60,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Cache without migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -85,7 +85,7 @@ jobs:
     env:
       CACHE_IMPORT_GITHUB: 'false'
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Cache without migration fallback (via env)
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
