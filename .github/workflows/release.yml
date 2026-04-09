@@ -16,6 +16,7 @@ jobs:
       publishToNpmJS: true
       skipJavascriptReleasabilityChecks: true
       useNpmTrustedPublisher: true
+      githubEnvironment: release
     permissions:
       id-token: write
       contents: write
