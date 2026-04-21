@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2025.12.13
+          version: 2026.1.0
       - name: Build, Test, Analyze and deploy
         id: build
         uses: SonarSource/ci-github-actions/build-npm@master # dogfood
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          version: 2025.12.13
+          version: 2026.1.0
       - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
         id: config
         with:
