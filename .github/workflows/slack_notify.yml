@@ -15,6 +15,9 @@ jobs:
       contains(fromJSON('["main", "master"]'), github.event.check_suite.head_branch) || startsWith(github.event.check_suite.head_branch, 'dogfood-') || startsWith(github.event.check_suite.head_branch, 'branch-')
     runs-on: github-ubuntu-latest-s
     steps:
+      - uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        with:
+          egress-policy: audit
       - name: Send Slack Notification
         env:
           GITHUB_TOKEN: ${{ github.token }}
