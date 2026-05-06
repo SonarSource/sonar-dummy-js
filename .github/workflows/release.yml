@@ -1,22 +1,23 @@
 name: release
-
+# yamllint disable-line rule:truthy
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
-      release_version:
-        description: 'Version'
-        required: false
+      version:
+        description: 'Release version'
+        required: true
+        type: string
 
 jobs:
   release:
-    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@v6
+    permissions:
+      id-token: write
+      contents: write
+    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@master # dogfood
     with:
+      version: ${{ inputs.version }}
       publishToNpmJS: true
       skipJavascriptReleasabilityChecks: true
       useNpmTrustedPublisher: true
       githubEnvironment: release
-    permissions:
-      id-token: write
-      contents: write
+      isDummyProject: true
