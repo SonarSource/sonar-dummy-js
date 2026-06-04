@@ -19,7 +19,8 @@ env:
 
 jobs:
   build:
-    runs-on: github-ubuntu-latest-s
+    runs-on:
+      group: sonar-dev
     name: Build
     permissions:
       id-token: write
@@ -34,10 +35,11 @@ jobs:
           version: 2025.12.13
       - name: Build, Test, Analyze and deploy
         id: build
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        uses: SonarSource/ci-github-actions/build-npm@feat/jcarsique/BUILD-11521-selfHostedRepox # dogfood
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
         with:
+          repox-url: https://repox.dev.sonar.build
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
@@ -46,7 +48,8 @@ jobs:
   custom-command:
     needs:
       - build
-    runs-on: github-ubuntu-latest-s
+    runs-on:
+      group: sonar-dev
     name: Custom NPM command
     permissions:
       id-token: write
@@ -56,9 +59,10 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2025.12.13
-      - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
+      - uses: SonarSource/ci-github-actions/config-npm@feat/jcarsique/BUILD-11521-selfHostedRepox # dogfood
         id: config
         with:
+          repox-url: https://repox.dev.sonar.build
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
       - run: |
           echo "BUILD_NUMBER: ${{ steps.config.outputs.BUILD_NUMBER }} (from action output)"
@@ -80,4 +84,4 @@ jobs:
     env:
       BUILD_NUMBER: ${{ needs.build.outputs.BUILD_NUMBER }} # reuse BUILD_NUMBER from build job
     steps:
-      - uses: SonarSource/ci-github-actions/promote@master # dogfood
+      - uses: SonarSource/ci-github-actions/promote@feat/jcarsique/BUILD-11521-selfHostedRepox # dogfood
