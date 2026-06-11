@@ -19,6 +19,6 @@
   "author": "Engineering Experience Squad <platform.eng-ex@sonarsource.com>",
   "license": "LGPLv3",
   "devDependencies": {
-    "jest": "^30.0.0"
+    "jest": "^30.4.2"
   }
 }
