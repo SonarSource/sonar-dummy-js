@@ -25,8 +25,6 @@ jobs:
       id-token: write
       contents: write
       attestations: write
-    outputs:
-      BUILD_NUMBER: ${{ steps.build.outputs.BUILD_NUMBER }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
@@ -90,7 +88,5 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    env:
-      BUILD_NUMBER: ${{ needs.build.outputs.BUILD_NUMBER }} # reuse BUILD_NUMBER from build job
     steps:
       - uses: SonarSource/ci-github-actions/promote@master # dogfood
