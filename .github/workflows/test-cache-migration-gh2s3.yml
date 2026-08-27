@@ -19,6 +19,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Create dummy cache content
         run: mkdir -p ~/.npm && echo "migration-test-${{ github.run_id }}" > ~/.npm/test-file.txt
       - name: Save to GitHub cache
@@ -37,6 +39,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache with migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -61,6 +65,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache without migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -86,6 +92,8 @@ jobs:
       CACHE_IMPORT_GITHUB: 'false'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache without migration fallback (via env)
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
