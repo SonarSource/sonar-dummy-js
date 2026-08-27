@@ -5,8 +5,12 @@ on:
 jobs:
   pre-commit:
     name: "pre-commit"
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.7.0
       - uses: SonarSource/gh-action_pre-commit@0ecedc4e4070444a95f6b6714ddc3ebcdde697c4 # 1.1.0
         with:
           extra-args: >
