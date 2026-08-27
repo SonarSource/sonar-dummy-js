@@ -13,12 +13,14 @@ env:
 jobs:
   # Prerequisite: provision a GitHub cache entry to be imported by scenario 1
   provision-github-cache:
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "Provision GitHub cache entry"
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Create dummy cache content
         run: mkdir -p ~/.npm && echo "migration-test-${{ github.run_id }}" > ~/.npm/test-file.txt
       - name: Save to GitHub cache
@@ -30,13 +32,15 @@ jobs:
   # Scenario 1: S3 backend with import mode active (default behavior after migration begins)
   test-s3-import-enabled:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import enabled (migration fallback)"
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache with migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -54,13 +58,15 @@ jobs:
   # Scenario 2: S3 backend with import mode explicitly disabled
   test-s3-import-disabled:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import disabled (migration complete)"
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache without migration fallback
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
@@ -77,7 +83,7 @@ jobs:
   # Scenario 3: S3 backend with import disabled via env var (repo variable pattern)
   test-s3-import-disabled-via-env:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import disabled via env var"
     permissions:
       id-token: write
@@ -86,6 +92,8 @@ jobs:
       CACHE_IMPORT_GITHUB: 'false'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Clean stale cache directory
+        run: rm -rf ~/.npm  # self-hosted runners aren't guaranteed a clean home dir per job, unlike GitHub-hosted ones
       - name: Cache without migration fallback (via env)
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
