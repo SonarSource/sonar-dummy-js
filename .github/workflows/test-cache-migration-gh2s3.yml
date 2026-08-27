@@ -13,7 +13,7 @@ env:
 jobs:
   # Prerequisite: provision a GitHub cache entry to be imported by scenario 1
   provision-github-cache:
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "Provision GitHub cache entry"
     permissions:
       contents: read
@@ -30,7 +30,7 @@ jobs:
   # Scenario 1: S3 backend with import mode active (default behavior after migration begins)
   test-s3-import-enabled:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import enabled (migration fallback)"
     permissions:
       id-token: write
@@ -54,7 +54,7 @@ jobs:
   # Scenario 2: S3 backend with import mode explicitly disabled
   test-s3-import-disabled:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import disabled (migration complete)"
     permissions:
       id-token: write
@@ -77,7 +77,7 @@ jobs:
   # Scenario 3: S3 backend with import disabled via env var (repo variable pattern)
   test-s3-import-disabled-via-env:
     needs: provision-github-cache
-    runs-on: github-ubuntu-latest-s
+    runs-on: sonar-s
     name: "S3 + import disabled via env var"
     permissions:
       id-token: write
