@@ -9,6 +9,7 @@ on:
 
 env:
   CACHE_BACKEND: s3   # forces S3 for all cache steps, including those in reusable actions
+  CACHE_TEST_DIR: ${{ github.workspace }}/.cache-migration-test
 
 jobs:
   # Prerequisite: provision a GitHub cache entry to be imported by scenario 1
@@ -20,11 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Create dummy cache content
-        run: mkdir -p ~/.npm && echo "migration-test-${{ github.run_id }}" > ~/.npm/test-file.txt
+        run: mkdir -p "$CACHE_TEST_DIR" && echo "migration-test-${{ github.run_id }}" > "$CACHE_TEST_DIR/test-file.txt"
       - name: Save to GitHub cache
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.npm
+          path: ${{ env.CACHE_TEST_DIR }}
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
 
   # Scenario 1: S3 backend with import mode active (default behavior after migration begins)
@@ -41,15 +42,15 @@ jobs:
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
         with:
-          path: ~/.npm
+          path: ${{ env.CACHE_TEST_DIR }}
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
           backend: s3
           # import-github-cache defaults to true — no need to set it explicitly
       - name: Verify import succeeded
         run: |
           [[ "${{ steps.cache.outputs.cache-hit }}" == "true" ]] || { echo "ERROR: cache-hit is not true"; exit 1; }
-          test -f ~/.npm/test-file.txt || { echo "ERROR: cache content not restored from GitHub"; exit 1; }
-          rm -rf ~/.npm  # prevent saving to S3 so other scenarios don't find it
+          test -f "$CACHE_TEST_DIR/test-file.txt" || { echo "ERROR: cache content not restored from GitHub"; exit 1; }
+          rm -rf "$CACHE_TEST_DIR"  # prevent saving to S3 so other scenarios don't find it
 
   # Scenario 2: S3 backend with import mode explicitly disabled
   test-s3-import-disabled:
@@ -65,14 +66,14 @@ jobs:
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
         with:
-          path: ~/.npm
+          path: ${{ env.CACHE_TEST_DIR }}
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
           backend: s3
           import-github-cache: 'false'
       - name: Verify no import from GitHub
         run: |
           [[ "${{ steps.cache.outputs.cache-hit }}" != "true" ]] || { echo "ERROR: cache-hit is true but import should be disabled"; exit 1; }
-          test ! -f ~/.npm/test-file.txt || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
+          test ! -f "$CACHE_TEST_DIR/test-file.txt" || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
 
   # Scenario 3: S3 backend with import disabled via env var (repo variable pattern)
   test-s3-import-disabled-via-env:
@@ -90,10 +91,10 @@ jobs:
         id: cache
         uses: SonarSource/gh-action_cache@master # dogfood
         with:
-          path: ~/.npm
+          path: ${{ env.CACHE_TEST_DIR }}
           key: test-migration-${{ runner.os }}-${{ github.run_id }}
           backend: s3
       - name: Verify no import from GitHub
         run: |
           [[ "${{ steps.cache.outputs.cache-hit }}" != "true" ]] || { echo "ERROR: cache-hit is true but import should be disabled"; exit 1; }
-          test ! -f ~/.npm/test-file.txt || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
+          test ! -f "$CACHE_TEST_DIR/test-file.txt" || { echo "ERROR: cache content was restored but import should be disabled"; exit 1; }
