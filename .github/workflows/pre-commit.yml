@@ -5,8 +5,15 @@ on:
 jobs:
   pre-commit:
     name: "pre-commit"
+    permissions:
+      id-token: write
+      contents: write
     runs-on: sonar-s
     steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
       - uses: SonarSource/gh-action_pre-commit@0ecedc4e4070444a95f6b6714ddc3ebcdde697c4 # 1.1.0
         with:
           extra-args: >
