@@ -14,7 +14,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
-      - uses: SonarSource/gh-action_pre-commit@0ecedc4e4070444a95f6b6714ddc3ebcdde697c4 # 1.1.0
+      - uses: SonarSource/gh-action_pre-commit@1181d422cbd3380624656c4dc46f6172263c0418 # 2.0.0
         with:
           extra-args: >
             --from-ref=origin/${{ github.event.pull_request.base.ref }}
