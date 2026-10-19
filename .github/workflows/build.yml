@@ -1,92 +1,159 @@
 ---
-name: Build
-
+name: NPM Prod Edge download proof
 on:
-  push:
-    branches:
-      - master
-      - branch-*
-  pull_request:
-  merge_group:
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
-
-env:
-  CACHE_BACKEND: s3   # forces S3 for all cache steps, including those in reusable actions
-
 jobs:
-  build:
+  npm-edge-proof:
     runs-on: sonar-s
-    name: Build
-    permissions:
-      id-token: write
-      contents: write
-      attestations: write
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
-        with:
-          version: 2026.7.0
-      - name: Build, Test, Analyze and deploy
-        id: build
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
-        env:
-          SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
-        with:
-          deploy-pull-request: true
-          artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
-          artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
-          provenance: 'true'
-
-  custom-command:
-    needs:
-      - build
-    runs-on: sonar-s
-    name: Custom NPM command
     permissions:
       id-token: write
       contents: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: 424febec4e550f2555cb41607e539d05727cff12
+          persist-credentials: false
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.7.0
-      - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
-        id: config
+      - name: Configure npm with the reviewed Edge-default candidate
+        uses: SonarSource/ci-github-actions/config-npm@9e4c3d9ed9f8e885a51fdbab5f779da159cd9a3c
         with:
-          artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
-      - run: |
-          echo "BUILD_NUMBER: ${{ steps.config.outputs.BUILD_NUMBER }} (from action output)"
-          echo "CURRENT_VERSION: $CURRENT_VERSION (from env)"
-          echo "current-version: ${{ steps.config.outputs.current-version }} (from action output)"
-          echo "PROJECT_VERSION: $PROJECT_VERSION (from env)"
-          echo "project-version: ${{ steps.config.outputs.project-version }} (from action output)"
-          npm install
-          npm test
+          artifactory-reader-role: private-reader
+          disable-caching: 'true'
+      - name: Prove a cold npm ci uses only Prod Edge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          node --version
+          npm --version
+          registry="$(npm config get registry)"
+          printf 'Configured registry: %s\n' "$registry"
+          printf 'replace-registry-host: %s\n' "$(npm config get replace-registry-host)"
+          test "${registry%/}" = 'https://repox-internal.sonar.build/artifactory/api/npm/npm'
+          export PROOF_PORT_FILE="$RUNNER_TEMP/npm-edge-proof.port"
+          export PROOF_PROXY_LOG="$RUNNER_TEMP/npm-edge-proxy.log"
+          export PROOF_NPM_LOG="$RUNNER_TEMP/npm-edge-http.log"
+          export PROOF_REPORT="$RUNNER_TEMP/npm-edge-proof.json"
+          python3 - <<'PY'
+          import json
+          with open('package-lock.json') as source:
+              lock = json.load(source)
+          urls = [p['resolved'] for p in lock['packages'].values() if 'resolved' in p]
+          assert len(urls) == 322, len(urls)
+          assert all(u.startswith('https://registry.npmjs.org/') for u in urls)
+          print('PR lockfile: 322 canonical registry.npmjs.org tarball URLs')
+          PY
+          cat > "$RUNNER_TEMP/npm-edge-proxy.py" <<'PY'
+          import http.server
+          import os
+          import select
+          import socket
+          from urllib.parse import urlsplit
 
-  report-ci-metrics:
-    needs:
-      - build
-      - custom-command
-    if: always() && (github.event_name == 'pull_request' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
-    runs-on: sonar-xs
-    name: Report CI metrics
-    permissions:
-      actions: read
-      pull-requests: write
-    steps:
-      - uses: SonarSource/ci-github-actions/report-ci-metrics@master # dogfood
+          class Proxy(http.server.BaseHTTPRequestHandler):
+              protocol_version = 'HTTP/1.1'
 
-  promote:
-    needs:
-      - build
-    runs-on: sonar-s
-    name: Promote
-    permissions:
-      id-token: write
-      contents: write
-    steps:
-      - uses: SonarSource/ci-github-actions/promote@master # dogfood
+              def log_message(self, *_):
+                  pass
+
+              def do_CONNECT(self):
+                  if self.path.lower() != 'repox-internal.sonar.build:443':
+                      print('DENY ' + self.path, flush=True)
+                      self.send_error(403)
+                      return
+                  print('ALLOW ' + self.path, flush=True)
+                  try:
+                      upstream = socket.create_connection(('repox-internal.sonar.build', 443), timeout=30)
+                  except OSError:
+                      print('ERROR Edge connection failed', flush=True)
+                      self.send_error(502)
+                      return
+                  with upstream:
+                      self.send_response(200, 'Connection established')
+                      self.end_headers()
+                      peers = [self.connection, upstream]
+                      while True:
+                          readable, _, _ = select.select(peers, [], [], 30)
+                          if not readable:
+                              return
+                          for sender in readable:
+                              data = sender.recv(65536)
+                              if not data:
+                                  return
+                              receiver = upstream if sender is self.connection else self.connection
+                              receiver.sendall(data)
+
+              def do_GET(self):
+                  print('DENY HTTP ' + str(urlsplit(self.path).hostname), flush=True)
+                  self.send_error(403)
+
+          server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Proxy)
+          with open(os.environ['PROOF_PORT_FILE'], 'w') as target:
+              target.write(str(server.server_port))
+          server.serve_forever()
+          PY
+          python3 -u "$RUNNER_TEMP/npm-edge-proxy.py" > "$PROOF_PROXY_LOG" 2>&1 &
+          proxy_pid=$!
+          trap 'kill "$proxy_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..50}; do
+            test ! -s "$PROOF_PORT_FILE" || break
+            sleep 0.1
+          done
+          test -s "$PROOF_PORT_FILE"
+          proxy="http://127.0.0.1:$(cat "$PROOF_PORT_FILE")"
+          if curl --proxy "$proxy" --noproxy '' --silent --show-error --max-time 10 \
+            --output /dev/null https://registry.npmjs.org/; then
+            echo 'ERROR: public registry control was unexpectedly allowed'
+            exit 1
+          fi
+          grep -Fx 'DENY registry.npmjs.org:443' "$PROOF_PROXY_LOG"
+          echo 'CONTROL: proxy blocks registry.npmjs.org as expected'
+          rm -rf node_modules
+          NO_PROXY='' no_proxy='' NPM_CONFIG_UPDATE_NOTIFIER=false npm ci \
+            --ignore-scripts --no-audit --no-fund --loglevel=http \
+            --cache "$RUNNER_TEMP/npm-edge-fresh-cache-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --proxy "$proxy" --https-proxy "$proxy" --noproxy '' \
+            2>&1 | tee "$PROOF_NPM_LOG"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from collections import Counter
+          from urllib.parse import urlsplit
+          with open(os.environ['PROOF_NPM_LOG']) as source:
+              output = source.read()
+          urls = re.findall(r'npm http fetch GET 200 (https://\S+)', output)
+          assert urls, 'No successful HTTP downloads recorded'
+          counts = Counter(urlsplit(u).hostname for u in urls)
+          assert set(counts) == {'repox-internal.sonar.build'}, counts
+          with open(os.environ['PROOF_PROXY_LOG']) as source:
+              proxy_lines = source.read().splitlines()
+          denied = [line for line in proxy_lines if line.startswith('DENY ')]
+          assert denied == ['DENY registry.npmjs.org:443'], denied
+          allowed = [line for line in proxy_lines if line.startswith('ALLOW ')]
+          assert allowed and all(line == 'ALLOW repox-internal.sonar.build:443' for line in allowed)
+          report = {'checkout_sha': '424febec4e550f2555cb41607e539d05727cff12',
+                    'action_sha': '9e4c3d9ed9f8e885a51fdbab5f779da159cd9a3c',
+                    'locked_canonical_urls': 322, 'http_200_downloads_by_host': dict(counts),
+                    'allowed_tls_connections': len(allowed),
+                    'public_registry_control_blocked': True,
+                    'unexpected_denied_connections_during_install': 0,
+                    'sample_downloads': urls[:5]}
+          with open(os.environ['PROOF_REPORT'], 'w') as target:
+              json.dump(report, target, indent=2)
+          print('PROOF: ' + json.dumps(report, indent=2))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as target:
+              target.write('## Cold npm ci through Prod Edge\n\n```json\n' + json.dumps(report, indent=2) + '\n```\n')
+          PY
+      - name: Upload download evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-prod-edge-download-proof
+          path: |
+            ${{ runner.temp }}/npm-edge-http.log
+            ${{ runner.temp }}/npm-edge-proxy.log
+            ${{ runner.temp }}/npm-edge-proof.json
+          if-no-files-found: error
