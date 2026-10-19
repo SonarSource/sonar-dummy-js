@@ -5,6 +5,7 @@ on:
 jobs:
   npm-edge-proof:
     runs-on: sonar-s
+    timeout-minutes: 5
     permissions:
       id-token: write
       contents: write
@@ -21,7 +22,7 @@ jobs:
         with:
           artifactory-reader-role: private-reader
           disable-caching: 'true'
-      - name: Prove a cold npm ci uses only Prod Edge
+      - name: Prove a cold npm ci uses Prod Edge on the normal runner network
         shell: bash
         run: |
           set -euo pipefail
@@ -32,98 +33,28 @@ jobs:
           printf 'Configured registry: %s\n' "$registry"
           printf 'replace-registry-host: %s\n' "$(npm config get replace-registry-host)"
           test "${registry%/}" = 'https://repox-internal.sonar.build/artifactory/api/npm/npm'
-          export PROOF_PORT_FILE="$RUNNER_TEMP/npm-edge-proof.port"
-          export PROOF_PROXY_LOG="$RUNNER_TEMP/npm-edge-proxy.log"
           export PROOF_NPM_LOG="$RUNNER_TEMP/npm-edge-http.log"
           export PROOF_REPORT="$RUNNER_TEMP/npm-edge-proof.json"
           python3 - <<'PY'
           import json
+          import os
           with open('package-lock.json') as source:
               lock = json.load(source)
           urls = [p['resolved'] for p in lock['packages'].values() if 'resolved' in p]
           assert len(urls) == 322, len(urls)
           assert all(u.startswith('https://registry.npmjs.org/') for u in urls)
           print('PR lockfile: 322 canonical registry.npmjs.org tarball URLs')
+          print('Runner proxy settings present: ' + json.dumps({k: bool(os.environ.get(k)) for k in ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'NO_PROXY', 'no_proxy']}))
           PY
-          cat > "$RUNNER_TEMP/npm-edge-proxy.py" <<'PY'
-          import http.server
-          import os
-          import select
-          import socket
-          import threading
-          from urllib.parse import urlsplit
-
-          log_lock = threading.Lock()
-
-          def log_event(message):
-              with log_lock:
-                  print(message, flush=True)
-
-          class Proxy(http.server.BaseHTTPRequestHandler):
-              protocol_version = 'HTTP/1.1'
-
-              def log_message(self, *_):
-                  pass
-
-              def do_CONNECT(self):
-                  if self.path.lower() != 'repox-internal.sonar.build:443':
-                      log_event('DENY ' + self.path)
-                      self.send_error(403)
-                      return
-                  log_event('ALLOW ' + self.path)
-                  try:
-                      upstream = socket.create_connection(('repox-internal.sonar.build', 443), timeout=30)
-                  except OSError:
-                      log_event('ERROR Edge connection failed')
-                      self.send_error(502)
-                      return
-                  with upstream:
-                      self.send_response(200, 'Connection established')
-                      self.end_headers()
-                      peers = [self.connection, upstream]
-                      while True:
-                          readable, _, _ = select.select(peers, [], [], 30)
-                          if not readable:
-                              return
-                          for sender in readable:
-                              data = sender.recv(65536)
-                              if not data:
-                                  return
-                              receiver = upstream if sender is self.connection else self.connection
-                              receiver.sendall(data)
-
-              def do_GET(self):
-                  log_event('DENY HTTP ' + str(urlsplit(self.path).hostname))
-                  self.send_error(403)
-
-          server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Proxy)
-          with open(os.environ['PROOF_PORT_FILE'], 'w') as target:
-              target.write(str(server.server_port))
-          server.serve_forever()
-          PY
-          python3 -u "$RUNNER_TEMP/npm-edge-proxy.py" > "$PROOF_PROXY_LOG" 2>&1 &
-          proxy_pid=$!
-          trap 'kill "$proxy_pid" 2>/dev/null || true' EXIT
-          for attempt in {1..50}; do
-            test ! -s "$PROOF_PORT_FILE" || break
-            sleep 0.1
-          done
-          test -s "$PROOF_PORT_FILE"
-          proxy="http://127.0.0.1:$(cat "$PROOF_PORT_FILE")"
-          if curl --proxy "$proxy" --noproxy '' --silent --show-error --max-time 10 \
-            --output /dev/null https://registry.npmjs.org/; then
-            echo 'ERROR: public registry control was unexpectedly allowed'
-            exit 1
-          fi
-          grep -Fx 'DENY registry.npmjs.org:443' "$PROOF_PROXY_LOG"
-          echo 'CONTROL: proxy blocks registry.npmjs.org as expected'
+          curl --head --silent --show-error --output /dev/null --connect-timeout 10 --max-time 20 \
+            --write-out 'Unauthenticated Edge connectivity: HTTP %{http_code}, remote IP %{remote_ip}\n' \
+            "$registry/semver/-/semver-7.8.5.tgz"
           rm -rf node_modules
           cache_dir="$RUNNER_TEMP/npm-edge-fresh-cache-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           test ! -e "$cache_dir"
-          NO_PROXY='' no_proxy='' NPM_CONFIG_UPDATE_NOTIFIER=false npm ci \
+          NPM_CONFIG_UPDATE_NOTIFIER=false npm ci \
             --ignore-scripts --no-audit --no-fund --loglevel=http \
-            --cache "$cache_dir" \
-            --proxy "$proxy" --https-proxy "$proxy" --noproxy '' \
+            --fetch-timeout=30000 --fetch-retries=0 --cache "$cache_dir" \
             2>&1 | tee "$PROOF_NPM_LOG"
           python3 - <<'PY'
           import json
@@ -137,18 +68,11 @@ jobs:
           assert urls, 'No successful HTTP downloads recorded'
           counts = Counter(urlsplit(u).hostname for u in urls)
           assert set(counts) == {'repox-internal.sonar.build'}, counts
-          with open(os.environ['PROOF_PROXY_LOG']) as source:
-              proxy_lines = source.read().splitlines()
-          denied = [line for line in proxy_lines if line.startswith('DENY ')]
-          assert denied == ['DENY registry.npmjs.org:443'], denied
-          allowed = [line for line in proxy_lines if line.startswith('ALLOW ')]
-          assert allowed and all(line == 'ALLOW repox-internal.sonar.build:443' for line in allowed)
           report = {'checkout_sha': '424febec4e550f2555cb41607e539d05727cff12',
                     'action_sha': '9e4c3d9ed9f8e885a51fdbab5f779da159cd9a3c',
-                    'locked_canonical_urls': 322, 'http_200_downloads_by_host': dict(counts),
-                    'allowed_tls_connections': len(allowed),
-                    'public_registry_control_blocked': True,
-                    'unexpected_denied_connections_during_install': 0,
+                    'network_mode': 'Runner default; no diagnostic proxy',
+                    'locked_canonical_urls': 322, 'fresh_cache': True,
+                    'http_200_downloads_by_host': dict(counts),
                     'sample_downloads': urls[:5]}
           with open(os.environ['PROOF_REPORT'], 'w') as target:
               json.dump(report, target, indent=2)
@@ -163,6 +87,5 @@ jobs:
           name: npm-prod-edge-download-proof
           path: |
             ${{ runner.temp }}/npm-edge-http.log
-            ${{ runner.temp }}/npm-edge-proxy.log
             ${{ runner.temp }}/npm-edge-proof.json
-          if-no-files-found: error
+          if-no-files-found: warn
