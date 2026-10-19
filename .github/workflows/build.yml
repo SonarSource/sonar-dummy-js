@@ -50,7 +50,14 @@ jobs:
           import os
           import select
           import socket
+          import threading
           from urllib.parse import urlsplit
+
+          log_lock = threading.Lock()
+
+          def log_event(message):
+              with log_lock:
+                  print(message, flush=True)
 
           class Proxy(http.server.BaseHTTPRequestHandler):
               protocol_version = 'HTTP/1.1'
@@ -60,14 +67,14 @@ jobs:
 
               def do_CONNECT(self):
                   if self.path.lower() != 'repox-internal.sonar.build:443':
-                      print('DENY ' + self.path, flush=True)
+                      log_event('DENY ' + self.path)
                       self.send_error(403)
                       return
-                  print('ALLOW ' + self.path, flush=True)
+                  log_event('ALLOW ' + self.path)
                   try:
                       upstream = socket.create_connection(('repox-internal.sonar.build', 443), timeout=30)
                   except OSError:
-                      print('ERROR Edge connection failed', flush=True)
+                      log_event('ERROR Edge connection failed')
                       self.send_error(502)
                       return
                   with upstream:
@@ -86,7 +93,7 @@ jobs:
                               receiver.sendall(data)
 
               def do_GET(self):
-                  print('DENY HTTP ' + str(urlsplit(self.path).hostname), flush=True)
+                  log_event('DENY HTTP ' + str(urlsplit(self.path).hostname))
                   self.send_error(403)
 
           server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Proxy)
@@ -111,9 +118,11 @@ jobs:
           grep -Fx 'DENY registry.npmjs.org:443' "$PROOF_PROXY_LOG"
           echo 'CONTROL: proxy blocks registry.npmjs.org as expected'
           rm -rf node_modules
+          cache_dir="$RUNNER_TEMP/npm-edge-fresh-cache-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          test ! -e "$cache_dir"
           NO_PROXY='' no_proxy='' NPM_CONFIG_UPDATE_NOTIFIER=false npm ci \
             --ignore-scripts --no-audit --no-fund --loglevel=http \
-            --cache "$RUNNER_TEMP/npm-edge-fresh-cache-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --cache "$cache_dir" \
             --proxy "$proxy" --https-proxy "$proxy" --noproxy '' \
             2>&1 | tee "$PROOF_NPM_LOG"
           python3 - <<'PY'
