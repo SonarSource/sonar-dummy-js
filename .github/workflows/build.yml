@@ -19,7 +19,9 @@ env:
 
 jobs:
   build:
-    runs-on: sonar-s
+    runs-on:
+      group: sonar-prod
+      labels: sonar-s
     name: Build
     permissions:
       id-token: write
@@ -35,6 +37,8 @@ jobs:
         uses: SonarSource/ci-github-actions/build-npm@master # dogfood
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-prod-edge
+          NPM_CONFIG_LOGLEVEL: http
         with:
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
@@ -44,7 +48,9 @@ jobs:
   custom-command:
     needs:
       - build
-    runs-on: sonar-s
+    runs-on:
+      group: sonar-prod
+      labels: sonar-s
     name: Custom NPM command
     permissions:
       id-token: write
