@@ -40,6 +40,7 @@ jobs:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-prod-edge
           NPM_CONFIG_LOGLEVEL: http
         with:
+          repox-url: https://repox.sonar.build
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
@@ -63,6 +64,7 @@ jobs:
       - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
         id: config
         with:
+          repox-url: https://repox.sonar.build
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
       - run: |
           echo "BUILD_NUMBER: ${{ steps.config.outputs.BUILD_NUMBER }} (from action output)"
