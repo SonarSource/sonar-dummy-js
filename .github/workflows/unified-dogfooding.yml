@@ -4,6 +4,7 @@ on:
     # Run the workflow every day at 04:00 UTC
     - cron: '0 4 * * *'
   workflow_dispatch:
+  pull_request: # SC-60373 pilot only; remove before merge
 
 env:
   CACHE_BACKEND: s3   # forces S3 for all cache steps, including those in reusable actions
@@ -17,7 +18,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+      - uses: SonarSource/ci-github-actions/build-npm@f92738b60fafe698bd3675185413313aed66a74e # SC-60373 / #367 pilot only; revert before merge
         with:
           repox-url: https://repox.sonar.build
           run-shadow-scans: true
