@@ -18,7 +18,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: SonarSource/ci-github-actions/build-npm@f92738b60fafe698bd3675185413313aed66a74e # SC-60373 / #367 pilot only; revert before merge
+      - uses: SonarSource/ci-github-actions/build-npm@f4823df1d29b563099d9eba06794d7e4d6c40d9d # SC-60373 / #367 pilot only; revert before merge
         with:
           repox-url: https://repox.sonar.build
           run-shadow-scans: true

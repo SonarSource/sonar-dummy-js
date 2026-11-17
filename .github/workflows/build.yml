@@ -34,7 +34,7 @@ jobs:
           version: 2026.7.0
       - name: Build, Test, Analyze and deploy
         id: build
-        uses: SonarSource/ci-github-actions/build-npm@f92738b60fafe698bd3675185413313aed66a74e # SC-60373 / #367 pilot only; revert before merge
+        uses: SonarSource/ci-github-actions/build-npm@f4823df1d29b563099d9eba06794d7e4d6c40d9d # SC-60373 / #367 pilot only; revert before merge
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
           NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-prod-edge
@@ -61,7 +61,7 @@ jobs:
           version: 2026.7.0
       - name: Delay the test phase after WIF authentication and before scanning
         run: npm pkg set 'scripts.test=node .github/wif-pilot-delay.cjs && jest --coverage'
-      - uses: SonarSource/ci-github-actions/build-npm@f92738b60fafe698bd3675185413313aed66a74e # SC-60373 / #367 pilot only
+      - uses: SonarSource/ci-github-actions/build-npm@f4823df1d29b563099d9eba06794d7e4d6c40d9d # SC-60373 / #367 pilot only
         env:
           SQ_SCANNER_VERSION: 4.3.0
         with:
