@@ -34,13 +34,12 @@ jobs:
           version: 2026.7.0
       - name: Build, Test, Analyze and deploy
         id: build
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        uses: SonarSource/ci-github-actions/build-npm@feat/hnasr/BUILD-13373-defaultRepoxSonarBuild
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
           NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-prod-edge
           NPM_CONFIG_LOGLEVEL: http
         with:
-          repox-url: https://repox.sonar.build
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
@@ -61,12 +60,12 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           version: 2026.7.0
-      - uses: SonarSource/ci-github-actions/config-npm@master # dogfood
+      - uses: SonarSource/ci-github-actions/config-npm@feat/hnasr/BUILD-13373-defaultRepoxSonarBuild
         id: config
         with:
-          repox-url: https://repox.sonar.build
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
       - run: |
+          echo "npm registry: $(npm config get registry)"
           echo "BUILD_NUMBER: ${{ steps.config.outputs.BUILD_NUMBER }} (from action output)"
           echo "CURRENT_VERSION: $CURRENT_VERSION (from env)"
           echo "current-version: ${{ steps.config.outputs.current-version }} (from action output)"
@@ -74,6 +73,28 @@ jobs:
           echo "project-version: ${{ steps.config.outputs.project-version }} (from action output)"
           npm install
           npm test
+
+  github-hosted-repox-sonar-build:
+    runs-on: ubuntu-latest
+    name: GitHub-hosted with repox.sonar.build
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.7.0
+      - uses: SonarSource/ci-github-actions/config-npm@feat/hnasr/BUILD-13373-defaultRepoxSonarBuild
+        with:
+          repox-url: https://repox.sonar.build
+          artifactory-reader-role: private-reader
+      - run: |
+          echo "npm registry: $(npm config get registry)"
+          getent hosts repox.sonar.build || true
+          curl -sS -o /dev/null -w 'ping HTTP %{http_code} via %{remote_ip}\n' --max-time 60 https://repox.sonar.build/artifactory/api/system/ping
+          npm ci
 
   report-ci-metrics:
     needs:
