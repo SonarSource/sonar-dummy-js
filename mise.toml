@@ -1,4 +1,7 @@
 [tools]
 shellcheck = "0.11.0"
 node = "22"
-java = "temurin-21"
+java = "corretto-21.0.13.1.2"
+
+[settings]
+minimum_release_age_excludes = ["java"]
