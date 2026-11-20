@@ -34,17 +34,41 @@ jobs:
           version: 2026.7.0
       - name: Build, Test, Analyze and deploy
         id: build
-        uses: SonarSource/ci-github-actions/build-npm@master # dogfood
+        uses: SonarSource/ci-github-actions/build-npm@c4b131f07573c3d5c4f8647a9c9b4b0c2eff1936 # SC-60373 / #367 pilot only; revert before merge
         env:
           SQ_SCANNER_VERSION: 4.3.0 # 4.3.1 requires node>=20
           NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-prod-edge
           NPM_CONFIG_LOGLEVEL: http
         with:
+          sonar-platform: sqc-eu
           repox-url: https://repox.sonar.build
           deploy-pull-request: true
           artifactory-reader-role: private-reader # TODO: BUILD-8639 Change to public-reader once Repox permissions for Repox are updated
           artifactory-deployer-role: qa-deployer # TODO: BUILD-8639 Change to public-deployer once Repox permissions for Repox are updated
           provenance: 'true'
+
+  wif-long-build:
+    name: WIF US scan after an 11-minute build delay
+    timeout-minutes: 25
+    runs-on: sonar-s
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: SonarSource/mise-action-wrapper@c2a44f2676ca98598415a83c5a4649e6a45a225a # 1.0.3
+        with:
+          mise-version: 2026.7.0
+      - name: Delay the test phase after WIF authentication and before scanning
+        run: npm pkg set 'scripts.test=node .github/wif-pilot-delay.cjs && jest --coverage'
+      - uses: SonarSource/ci-github-actions/build-npm@c4b131f07573c3d5c4f8647a9c9b4b0c2eff1936 # SC-60373 / #367 pilot only
+        env:
+          SQ_SCANNER_VERSION: 4.3.0
+        with:
+          sonar-platform: sqc-us
+          deploy: false
+          repox-url: https://repox.sonar.build
+          artifactory-reader-role: private-reader
 
   custom-command:
     needs:
